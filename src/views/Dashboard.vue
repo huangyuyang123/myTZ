@@ -4,7 +4,7 @@ import {sites,pageState,enterDashboard,leavePage} from '../composables/useMonito
 import {t} from '../composables/useTheme.js'
 import {bytes,isOnline} from '../utils/metrics.js'
 import ServerCard from '../components/ServerCard.vue'
-import chainsawHero from '../../assets/chainsaw-hero.png'
+import chainsawHero from '../../assets/chainsaw-hero.webp'
 const search=ref(''),filter=ref('all')
 const totals=computed(()=>sites.value.reduce((sum,s)=>{for(const k of Object.keys(sum)) sum[k]+=Number(s.stats[k]||0);return sum},{total:0,online:0,offline:0,globalSpeedIn:0,globalSpeedOut:0}))
 const visible=computed(()=>sites.value.flatMap(site=>site.servers.map(server=>({site,server}))).filter(({server})=>`${server.name} ${server.server_group} ${server.tags||''} ${server.region||''}`.toLowerCase().includes(search.value.toLowerCase()) && (filter.value==='all' || isOnline(server,pageState.now)===(filter.value==='online'))))
@@ -24,7 +24,7 @@ onMounted(()=>enterDashboard().catch(e=>pageState.error=e.message));onBeforeUnmo
     <div class="hero-visual" aria-hidden="true">
       <div class="poster-ring"></div><div class="poster-slash"></div>
       <span class="poster-label">CHAINSAW MAN</span>
-      <img class="hero-art" :src="chainsawHero" alt="" width="1146" height="1373" fetchpriority="high" decoding="async">
+      <img class="hero-art" :src="chainsawHero" alt="" width="720" height="863" fetchpriority="high" decoding="async">
       <span class="poster-caption">KEEP IT<span>RUNNING.</span></span>
       <span class="poster-code">CSM — MONITOR EDITION</span>
     </div>
