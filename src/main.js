@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router/index.js'
-import './style.css'
+import './chainsaw.css'
 const app = createApp(App)
 app.config.errorHandler = error => {
   const node = document.createElement('div'); node.className = 'fatal-error'; node.setAttribute('role','alert'); node.textContent = error.message; document.body.append(node)
