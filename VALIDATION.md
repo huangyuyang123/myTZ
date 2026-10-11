@@ -1,6 +1,6 @@
 # 验证记录 · 2026-10-11
 
-状态：源码、本地构建和模拟验证通过；真实 Worker 的**公开 + Turnstile 开/关**两种组合已通过当前浏览器访问、历史和实时更新测试。两种私有组合的未登录跳转已检查；**私有登录后数据访问及真实 401/403 恢复仍待验收，尚未提交主题商店或发布到 GitHub。**
+状态：源码、本地构建和模拟验证通过；真实 Worker 的**公开 + Turnstile 开/关**两种组合已通过访问、历史和实时更新测试。**私有 + Turnstile 开/关**两种组合的未登录跳转及登录后同源首页、详情、历史和实时更新已检查。源码已发布到用户指定的 GitHub 仓库，推送与手动构建均成功。**跨域 JWT WS 及真实 401/403 恢复仍待验收，尚未满足完整验收条件，不提交主题商店。**
 
 参考核对的官方源码 commit：`79679db2dbef281865c3d670839c79aaa1c0adc1`。
 
@@ -52,10 +52,14 @@
 
 - [x] 公开、Turnstile 关，无凭证首页与真实 WS 持续推送。
 - [x] 公开、Turnstile 开，用户完成真实挑战后能读取数据，缓存凭证在刷新后复用；交换请求的现场网络记录未捕获，不能据此宣称已独立审计真实签发过程。
-- [ ] 私有、Turnstile 关，内置后台登录后 Cookie WS 与跨域 JWT WS。
-- [ ] 私有、Turnstile 开，JWT 与 Turnstile 在 servers/server/history/all 同时生效，WS 鉴权成功；真实 401/403 不产生循环。
-- [ ] 所有测试 Worker 配好 CORS_ALLOWED_ORIGINS，线上静态地址 CSP 与后台外观资源加载正常。
-- [ ] GitHub 实际运行两次构建，确认 dist 提交历史追加、说明等于触发源码说明，并从 Settings → Pages 选择 dist/root 正常托管。
+- [x] 两种私有组合：内置后台登录后的同源首页、详情、共享历史及实时更新可用。生产预览未记录脱敏网络诊断，因此这项表示实际使用流程通过，不表示独立审计每条请求头或 WS Cookie。
+- [ ] 私有、Turnstile 关，跨域 JWT WS 建连和持续推送。
+- [ ] 私有、Turnstile 开，跨域 JWT + Turnstile 同时生效；真实 401/403 恢复不产生循环。
+- [x] 测试 Worker 两个域名均已允许用户指定的跨域 origin，OPTIONS 返回正确 CORS 响应。
+- [ ] 线上纯静态地址 CSP、Turnstile 与外观资源加载。Worker 同源预览已显示后台标题、版本和默认静态图标。
+- [x] GitHub 实际运行推送和手动两次构建；dist 历史追加，提交说明等于触发源码完整说明。
+- [x] Settings → Pages 已保存 dist 分支、根目录作为源。
+- [ ] Pages 实际 HTTPS 访问：继承的账号自定义域名尚未配置好 HTTPS，按用户选择保留域名。
 
 用户已提供测试 Worker 地址。2026-10-11 首次使用 workers.dev 地址时，浏览器打开未完成，GET `/api/config` 的接口直连连接超时，没有获得 HTTP 状态或配置内容。随后用户提供自定义域名，接口直连已成功：
 
@@ -63,7 +67,7 @@
 - GET `/api/servers`，不带验证凭证：HTTP 403，`Turnstile verification failed`。这验证了当前后端要求验证凭证，但不等同于主题已通过真实 Turnstile 挑战与完整数据访问测试。
 - OPTIONS `/api/servers`，Origin 为 `http://127.0.0.1:5173`：HTTP 204，没有 `Access-Control-Allow-Origin` 或 `Access-Control-Allow-Credentials`。当前配置未允许该本地主题预览 origin 跨域读取。
 
-测试地址仅作为运行时输入使用，未写入仓库文件。最初的连接和 CORS 阻碍已按下面记录解决；私有完整验收和目标仓库 Actions 运行仍未完成。后台开关经用户明确授权短时调整，并已恢复原值，详见下方记录。
+测试地址仅作为运行时输入使用，未写入源码仓库文件。最初的连接和 CORS 阻碍已按下面记录解决；当时私有完整验收和目标仓库 Actions 运行尚未完成，后续进展见末尾记录。后台开关经用户明确授权短时调整，并已恢复原值。
 
 用户随后确认已在内置浏览器进入管理菜单。浏览器工具能列出后台标签页，但读取该远程页面持续超时，因此尚未独立确认登录会话或操作后台开关。已通过进程环境变量启动真实后端的本地主题预览（`http://127.0.0.1:5173`）；预览 HTML 和入口模块均 HTTP 200，后端 meta 注入已检查。
 
@@ -99,7 +103,7 @@
 
 通过内置后台分别保存“私有 + Turnstile 关”及“私有 + Turnstile 开”，本地主题均跳转到内置 `/admin#/admin`。开启 Turnstile 时的脱敏日志只记录一次 config HTTP 200，配置为 public=false、turnstile=true、authorized=false；主题没有先查询监控数据或陷入验证循环。该浏览器在后端 origin 已有登录会话，因此跳转后显示内置管理页。
 
-主题所在本地 origin 没有 JWT，后端 origin 的登录状态不会自动迁移至本地 origin。当前没有目标 GitHub 仓库或同源主题预览部署，所以私有登录后的 REST、Cookie WS、跨域 JWT WS 以及真实 401/403 恢复没有完成。**不能把未登录跳转成功计作私有组合完整通过。**
+主题所在本地 origin 没有 JWT，后端 origin 的登录状态不会自动迁移至本地 origin。当时尚无目标 GitHub 仓库或同源主题预览部署，所以私有登录后的 REST、Cookie WS、跨域 JWT WS 以及真实 401/403 恢复没有完成。**不能把未登录跳转成功计作私有组合完整通过。**后续同源预览测试见末尾。
 
 ### 原设置恢复（已确认）
 
@@ -108,3 +112,34 @@
 模拟用的占位站点名、服务器和图标只在 tests/browser 中；生产主题无内置示例监控数据。附带预览图同样来自模拟数据，不代表真实部署。
 
 纯静态站不能用配置 API 获得当前后端未公开返回的 custom_bg/custom_head/custom_script。要使用这些后台外观设置，应由 Worker 代理/服务主题 HTML；直托管背景通过 Secret 注入。未通过额外端点绕过该限制。
+
+### GitHub 发布与实际构建
+
+用户指定仓库 [huangyuyang123/myTZ](https://github.com/huangyuyang123/myTZ)，并明确选择用作公开主题仓库。通过用户已登录的网页逐目录上传，没有新增 OAuth 权限或保存 Git 凭据。33 个源文件的 blob 与本地通过检查的源码一致，发布源码 commit 为 `02821cd8afc3a3695aae9e3f34fedddd225f6b1c`。
+
+- [推送构建 38140989056](https://github.com/huangyuyang123/myTZ/actions/runs/38140989056)：success；首个 dist commit 为 `ade6540fa196a3cdbfef23c9fa07ef8f702e05a2`。
+- [手动构建 38141102705](https://github.com/huangyuyang123/myTZ/actions/runs/38141102705)：success；dist commit 为 `0adf61e5dadb42d9114a126c8bdcfdbaa56ae653`，父提交为上述首个构建，保留两次构建历史。
+- 两次 dist 提交的完整说明都与触发源码相同：`发布完整主题并自动构建 dist 分支`。dist 根目录只有 `index.html` 与 `assets/`，共三个文件。
+- 已在仓库 Secrets 设置 API_BASE，值来自用户指定测试 Worker。上述两次构建发生在设置 Secret 前，因此它们使用同源回退；后续构建读取该 Secret，不把地址写入源码。
+- Pages 已保存 `dist` 分支、`/ (root)`。项目继承账号主站自定义域名 `3567.me`，当前 HTTPS 不可启用。用户选择保留域名并继续 Worker 主题预览，未更改账号主站域名、DNS 或证书设置。
+
+### 后续 CORS 检查
+
+用户追加所需允许来源后，对测试 Worker 的两个域名分别执行 OPTIONS `/api/servers`，Origin 分别为 `https://huangyuyang123.github.io` 与用户指定同源预览站点。四个响应均为 HTTP 204，Access-Control-Allow-Origin 精确匹配请求来源，Access-Control-Allow-Credentials 为 true，Authorization 与 X-Turnstile-Verified 请求头获准。CORS 配置正确不等于已经通过跨域 JWT 或 Turnstile 访问。
+
+### 真实同源私有组合（登录后访问流程已检查）
+
+从内置后台的自定义主题入口启动固定版本 `0adf61e5dadb42d9114a126c8bdcfdbaa56ae653` 的生产构建预览。原站使用的 LuminaPlus 主题未切换。用户自行完成新主题的首次 Turnstile 挑战，随后首页显示 7 台真实服务器和“实时连接”。
+
+最初刷新预览时，内置浏览器显示 ERR_BLOCKED_BY_CLIENT。本次失败不计作通过；立即恢复公开与全局 Turnstile 开启并确认保存。官方预览授权 Cookie 的 Max-Age 为 600 秒，旧预览可能过期；从后台重新启动预览后恢复正常。没有绕过浏览器安全警告或直接调用管理 API。
+
+2026-10-11 21:38–21:40（Asia/Shanghai），在新预览授权有效期内，通过后台界面短时测试：
+
+| 组合 | 观察结果 |
+| --- | --- |
+| 私有 + Turnstile 开 | 保存成功后刷新首页，显示 7 台服务器与“实时连接”，没有再次弹验证；racknerd 详情显示真实 CPU、内存、网络和默认 10 分钟历史，包括延迟、丢包、磁盘 IO；指标持续变化，历史右端追加当前时间样本 |
+| 私有 + Turnstile 关 | 保存成功后刷新详情，真实指标与共享历史正常载入；返回首页显示 7 台服务器与“实时连接”，无验证组件；指标持续变化 |
+
+两个观察段没有 error/warn 控制台日志。生产构建不包含开发诊断；没有读取、复制或打印 JWT、Cookie、验证凭证，也没有独立记录该生产预览的请求次数或认证头。这些结果支持同源登录后功能可用，不能代替跨域 WS 和真实失效恢复验收。
+
+结束后再次确认后台“公开访问”为 true、“启用 Turnstile（全局）”为 true、“登录启用 Turnstile”为 false，并显示“设置保存成功”。CSP API 域名白名单原值为空；用户选择保留原值，因此未进行需要扩展连接白名单的跨域 JWT 测试。真实 401/403 恢复仍待验收。
