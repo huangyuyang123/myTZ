@@ -1,0 +1,2 @@
+<script setup>defineProps({label:String,value:Number,caption:String})</script>
+<template><div class="metric"><div class="metric-line"><span>{{label}}</span><b>{{value == null || !Number.isFinite(value) ? '—' : value.toFixed(1)+'%'}}</b></div><div class="bar"><span :class="{hot:value>85}" :style="{width:`${Math.max(0,Math.min(100,value || 0))}%`}"></span></div><small v-if="caption" class="muted">{{caption}}</small></div></template>
