@@ -1,0 +1,50 @@
+name: Build static theme
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: theme-dist
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          TITLE: ${{ secrets.TITLE }}
+          BACKGROUND_IMAGE: ${{ secrets.BACKGROUND_IMAGE }}
+          CSP_API: ${{ secrets.CSP_API }}
+          CSP_STATIC: ${{ secrets.CSP_STATIC }}
+      - name: Append build to dist branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git log -1 --format=%B "$GITHUB_SHA" > "$RUNNER_TEMP/source-message.txt"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          deploy="$RUNNER_TEMP/cfsm-dist"
+          if git ls-remote --exit-code --heads origin dist > /dev/null; then
+            git fetch origin dist
+            git worktree add --detach "$deploy" FETCH_HEAD
+          else
+            git worktree add --detach "$deploy" "$GITHUB_SHA"
+            git -C "$deploy" checkout --orphan dist
+            git -C "$deploy" rm -rf --ignore-unmatch .
+          fi
+          # The branch contains only the two required artifact entries.
+          rsync -a --delete --exclude=.git dist/ "$deploy/"
+          git -C "$deploy" add --all
+          git -C "$deploy" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --allow-empty -F "$RUNNER_TEMP/source-message.txt"
+          git -C "$deploy" push origin HEAD:refs/heads/dist
