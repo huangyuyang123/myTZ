@@ -71,12 +71,15 @@ test('anonymous private site redirects to built-in admin',async({page})=>{
  expect(state.requests.filter(r=>r.path==='/api/servers')).toHaveLength(0)
 })
 test('renders desktop and mobile without overflow',async({page})=>{
- await backend(page);await page.setViewportSize({width:1440,height:1100});await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(6)
+ const state=await backend(page);await page.setViewportSize({width:1440,height:1100});await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(6)
  await page.screenshot({path:'../../work/dashboard-desktop.png',fullPage:true})
  await page.locator('.server-name').first().click();await expect(page.locator('.detail-stats')).toBeVisible();await page.screenshot({path:'../../work/detail-desktop.png',fullPage:true})
  await page.goto('/#/');await page.setViewportSize({width:390,height:844});await expect(page.locator('.server-card')).toHaveCount(6)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
  await page.screenshot({path:'../../work/dashboard-mobile.png',fullPage:true})
+ state.cfg.preferred_theme='light';await page.setViewportSize({width:1440,height:1100});await page.reload();await expect(page.locator('.server-card')).toHaveCount(6)
+ await expect(page.locator('html')).toHaveAttribute('data-theme','light');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+ await page.screenshot({path:'../../work/chainsaw-desktop-light.png',fullPage:true})
 })
 test('dashboard coalesces bursts, preserves report fields, no background REST polling',async({page})=>{
  const state=await backend(page)
