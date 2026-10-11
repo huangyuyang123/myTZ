@@ -4,6 +4,7 @@ import { createHttp, readJwt } from '../utils/http.js'
 import { createApi } from '../utils/api.js'
 import { createSocket } from '../utils/socket.js'
 import { batches, mergeMetrics, gpu, timestamp } from '../utils/metrics.js'
+import { compactHistory } from '../utils/history.js'
 import { requestChallenge } from './challenge.js'
 
 export const sites = shallowRef([])
@@ -90,7 +91,7 @@ async function load(p, restore) {
       if (!cached) {
         cached = {hours:0.167, promise: Promise.all([site.api.server(key), site.api.history(key, 0.167)]).then(([server,history]) => {
           if (!Array.isArray(history)) throw Error('Invalid history response')
-          return {server:normalized(server), history:history.map(normalized), hours:0.167}
+          return {server:normalized(server), history:compactHistory(history.map(normalized), 0.167), hours:0.167}
         })}
         site.details.set(key, cached)
       }
@@ -165,7 +166,7 @@ function flush(p) {
     {
       p.detail.server = mergeMetrics(p.detail.server, record.patch)
       const row = {...p.detail.server, timestamp:record.ts}
-      p.detail.history = [...p.detail.history.filter(r => timestamp(r.timestamp) !== record.ts), row].sort((a,b)=>timestamp(a.timestamp)-timestamp(b.timestamp)).filter(r=>timestamp(r.timestamp) >= Date.now()-p.detail.hours*3600000).slice(-1200)
+      p.detail.history = compactHistory([...p.detail.history, row], p.detail.hours)
       p.site.details.set(p.id, {promise:Promise.resolve({server:p.detail.server, history:p.detail.history, hours:p.detail.hours})})
     }
   }
@@ -193,7 +194,7 @@ export async function changeRange(hours) {
     const rows = await p.site.api.history(p.id, hours)
     if (!Array.isArray(rows)) throw Error('Invalid history response')
     if (active !== p || ticket !== historyRevision) return
-    p.detail.hours = hours; p.detail.history = rows.map(normalized); pageState.error = ''
+    p.detail.hours = hours; p.detail.history = compactHistory(rows.map(normalized), hours); pageState.error = ''
     p.site.details.set(p.id, {promise:Promise.resolve({server:p.detail.server, history:p.detail.history, hours})})
   } catch(e) { if (active === p) pageState.error = e.message }
   finally { if (active === p && ticket === historyRevision) p.detail.historyLoading = false }
