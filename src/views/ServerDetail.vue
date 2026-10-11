@@ -12,13 +12,13 @@ const site=computed(()=>sites.value[siteIndex])
 const s=computed(()=>detail.server)
 const probes=computed(()=>probeLines(site.value?.config||{}))
 const charts=computed(()=>[
- {title:'CPU',unit:'%',series:[{key:'cpu',label:'CPU',color:'#22c7aa'}]},
- {title:t('内存 / Swap','Memory / Swap'),unit:' MB',series:[{key:'ram_used',label:t('内存','Memory'),color:'#8d9cff'},{key:'swap_used',label:'Swap',color:'#eb80bc'}]},
- {title:t('网络速率','Network speed'),unit:' B/s',series:[{key:'net_in_speed',label:t('下载','Download'),color:'#22c7aa'},{key:'net_out_speed',label:t('上传','Upload'),color:'#8d9cff'}]},
+ {title:'CPU',unit:'%',series:[{key:'cpu',label:'CPU',color:'#f26b38'}]},
+ {title:t('内存 / Swap','Memory / Swap'),unit:' MB',series:[{key:'ram_used',label:t('内存','Memory'),color:'#8c9be7'},{key:'swap_used',label:'Swap',color:'#aaba47'}]},
+ {title:t('网络速率','Network speed'),unit:' B/s',series:[{key:'net_in_speed',label:t('下载','Download'),color:'#f26b38'},{key:'net_out_speed',label:t('上传','Upload'),color:'#8c9be7'}]},
  {title:t('延迟','Latency'),unit:' ms',series:probes.value.map(p=>({...p,key:'ping_'+p.key}))},
  {title:t('丢包率','Packet loss'),unit:'%',series:probes.value.map(p=>({...p,key:'loss_'+p.key}))},
- ...(detail.history.some(r=>r.disk && typeof r.disk==='object')?[{title:t('磁盘 IO','Disk IO'),unit:' B/s',series:[{key:'read_bps',label:t('读取','Read'),color:'#22c7aa'},{key:'write_bps',label:t('写入','Write'),color:'#f5ba64'}],disk:true}]:[]),
- ...Array.from(new Map(detail.history.flatMap(r=>gpu(r.gpu_info).map(g=>[String(g.id),g])))).map(([id,g])=>({title:g.name || `GPU ${id}`,unit:'%',series:[{key:'gpu_value',label:g.name || `GPU ${id}`,color:'#eb80bc'}],gpuId:id}))
+ ...(detail.history.some(r=>r.disk && typeof r.disk==='object')?[{title:t('磁盘 IO','Disk IO'),unit:' B/s',series:[{key:'read_bps',label:t('读取','Read'),color:'#f26b38'},{key:'write_bps',label:t('写入','Write'),color:'#aaba47'}],disk:true}]:[]),
+ ...Array.from(new Map(detail.history.flatMap(r=>gpu(r.gpu_info).map(g=>[String(g.id),g])))).map(([id,g])=>({title:g.name || `GPU ${id}`,unit:'%',series:[{key:'gpu_value',label:g.name || `GPU ${id}`,color:'#aaba47'}],gpuId:id}))
 ])
 function rowsFor(chart){return chart.disk?detail.history.map(r=>({timestamp:r.timestamp,...r.disk})):chart.gpuId!==undefined?detail.history.map(r=>({timestamp:r.timestamp,gpu_value:gpu(r.gpu_info).find(g=>String(g.id)===chart.gpuId)?.info})):detail.history}
 const rangeName=h=>h===0.167?t('10 分钟','10 min'):h===0.5?t('30 分钟','30 min'):h<24?`${h} ${t('小时','h')}`:`${h/24} ${t('天','d')}`
