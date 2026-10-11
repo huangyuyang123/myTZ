@@ -3,7 +3,7 @@ import { sites } from './useMonitor.js'
 export const config = computed(() => sites.value[0]?.config || {})
 export const language = computed(() => config.value.default_language === 'auto' || !config.value.default_language ? navigator.language.startsWith('zh') ? 'zh' : 'en' : config.value.default_language.startsWith('zh') ? 'zh' : 'en')
 export const t = (zh, en) => language.value === 'zh' ? zh : en
-export const defaults = {density:'comfortable', accent:'#22c7aa', showCharts:true}
+export const defaults = {density:'comfortable', accent:'#f26b38', showCharts:true}
 export const options = computed(() => ({...defaults, ...(config.value.theme_options && !Array.isArray(config.value.theme_options) ? config.value.theme_options : {})}))
 const initialTitle = document.title
 const initialBackground = document.querySelector('meta[name="backgroundImage"]')?.content
