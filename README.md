@@ -1,6 +1,8 @@
-# Observatory · CF-Server-Monitor 第三方主题
+# Chainsaw · CF-Server-Monitor 第三方主题
 
 独立 Vue 3 + Vite 主题，支持 hash 路由、响应式卡片、资源和网络历史、GPU、磁盘 IO、深浅色、中英文和多 Worker。生产页面不附带模拟数据。
+
+当前视觉为《电锯人》动漫主题：安全橙、墨黑与灰白配色，漫画海报首页，透明角色插画，粗线框节点卡片与锯齿细节。深浅色仍由后台 preferred_theme 控制，强调色仍可在 theme_options 调整；页面不增加监控接口、轮询或数据查询。插画为本次生成的原创同人图，来源和提示词见 ASSETS.md。
 
 ## 本地使用
 
@@ -43,7 +45,7 @@ npm run build
 主题自身 `theme_options` 默认值：
 
 ```json
-{"density":"comfortable","accent":"#22c7aa","showCharts":true}
+{"density":"comfortable","accent":"#f26b38","showCharts":true}
 ```
 
 界面提供保存选项操作，通过 `POST /api/theme_options` 保存到选定 Worker，需要 JWT。保留该对象里主题未知的其他键，不写入站点外观设置。localStorage 仅用于平台 JWT 和按 Worker 隔离的 Turnstile 凭证，不作为主题选项的唯一存储。
