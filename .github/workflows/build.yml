@@ -44,7 +44,8 @@ jobs:
             git -C "$deploy" rm -rf --ignore-unmatch .
           fi
           # The branch contains only the two required artifact entries.
-          rsync -a --delete --exclude=.git dist/ "$deploy/"
+          rsync -a --checksum --delete --exclude=.git dist/ "$deploy/"
+          node scripts/check-build.js "$deploy"
           git -C "$deploy" add --all
           git -C "$deploy" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --allow-empty -F "$RUNNER_TEMP/source-message.txt"
           git -C "$deploy" push origin HEAD:refs/heads/dist
