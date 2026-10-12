@@ -4,7 +4,7 @@ import {sites,pageState,enterDashboard,leavePage} from '../composables/useMonito
 import {t} from '../composables/useTheme.js'
 import {bytes,isOnline} from '../utils/metrics.js'
 import ServerCard from '../components/ServerCard.vue'
-import chainsawHero from '../../assets/chainsaw-hero.webp'
+import makimaBackground from '../../assets/makima-background.png'
 const search=ref(''),filter=ref('all')
 const totals=computed(()=>sites.value.reduce((sum,s)=>{for(const k of Object.keys(sum)) sum[k]+=Number(s.stats[k]||0);return sum},{total:0,online:0,offline:0,globalSpeedIn:0,globalSpeedOut:0}))
 const visible=computed(()=>sites.value.flatMap(site=>site.servers.map(server=>({site,server}))).filter(({server})=>`${server.name} ${server.server_group} ${server.tags||''} ${server.region||''}`.toLowerCase().includes(search.value.toLowerCase()) && (filter.value==='all' || isOnline(server,pageState.now)===(filter.value==='online'))))
@@ -12,21 +12,12 @@ onMounted(()=>enterDashboard().catch(e=>pageState.error=e.message));onBeforeUnmo
 </script>
 <template>
   <section class="hero overview-hero">
+    <img class="makima-art" :src="makimaBackground" alt="" width="1536" height="1024" fetchpriority="high" decoding="async">
     <div class="hero-copy">
-      <p class="eyebrow">CHAINSAW / OPERATIONS</p>
-      <h1>{{t('监控不停。','Eyes on every node.')}}<br><span>{{t('全线开动。','Keep it running.')}}</span></h1>
-      <p class="muted">{{t('节点运行状态、资源与网络，一眼看清。','Resources, network, and every node’s heartbeat. All in view.')}}</p>
+      <h1>CHAINSAW MAN</h1>
       <div class="hero-meta">
         <div class="live-indicator"><i :class="{live:sites.some(s=>s.status==='live')}"></i>{{sites.some(s=>s.status==='live')?t('实时连接','Live connection'):t('静态快照','Last snapshot')}}</div>
-        <span class="hero-tag" aria-hidden="true">DEVIL HUNTER / SYSTEM WATCH</span>
       </div>
-    </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="poster-ring"></div><div class="poster-slash"></div>
-      <span class="poster-label">CHAINSAW MAN</span>
-      <img class="hero-art" :src="chainsawHero" alt="" width="720" height="863" fetchpriority="high" decoding="async">
-      <span class="poster-caption">KEEP IT<span>RUNNING.</span></span>
-      <span class="poster-code">CSM — MONITOR EDITION</span>
     </div>
   </section>
   <section class="summary-grid">
