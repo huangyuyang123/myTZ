@@ -69,6 +69,10 @@ npm run build
 
 以上例外是需求确认后的实现范围，不会以“严格全生命周期只读一次 config”掩盖实际交换请求。
 
+跨域私有请求使用当前 `localStorage.jwt_token`：HTTP 发送 Bearer，WS 仅在不同 origin 时添加 URL token，同源继续使用 HttpOnly Cookie。每次重连重新读取 JWT，避免沿用旧登录。JWT 的 exp 仅作为到期提示，签名仍由后台验证；私有实时连接到期主动关闭并进入内置后台，不增加配置探测或 REST 轮询。依据 [WebSocket 标准](https://websockets.spec.whatwg.org/#feedback-from-the-protocol)，浏览器把握手 401 和其他网络失败统一隐藏为连接失败，因此不把每次 1006 当作已确认的 401；未知失败保持有限退避，并显示停止重试提示。
+
+收到实际 401 时清理本次请求对应的 JWT，并只发起一次后台跳转、关闭现有连接。若响应较晚且 JWT 已被新登录替换，不清除新 JWT，原请求最多用新登录补试一次。403 只清除本次请求使用的旧验证凭证，并发或迟到响应不会抹掉已经交换的新凭证；重新人工验证和交换最多一次，继续失败就暴露错误。
+
 首页按每台服务器积累增量样本，每秒最多合并一次响应式数据，每个后端每次只遍历列表一次。CPU、内存、Swap、网速及报告级磁盘、GPU、探测字段按字段覆盖，缺失字段保留。首页小图仅使用列表返回的 ping/loss 窗口，没有按服务器补拉历史。总数和在线统计保留后端 stats 的快照口径。
 
 详情所有历史共用 history/all。实时曲线只在内存追加本轮最新样本，不轮询历史。超出 1200 点时按所选时间范围分桶抽样，保留范围两端及代表性的资源峰值、探测超时/空值点，避免 24 小时视图被新样本挤成最近 20 分钟。抽样保留原始记录，不生成平均值或伪造零值。false/缺失不画点，null 显示超时且曲线上留空并标记三角，0 正常显示。磁盘 IO 只读 disk 对象，历史均缺失时不渲染该图。ram/disk 容量为 MB，转换成字节格式显示；网速为 B/s。
@@ -82,7 +86,7 @@ npm run check
 npx playwright test
 ```
 
-浏览器测试默认使用本机 Chrome 路径；Linux/macOS 或其他安装目录请调整 `playwright.config.js` 的 `executablePath`，或安装 Playwright Chromium 并移除该设置。测试 mock 后端与 Turnstile，无需 Worker/D1，不会消耗数据库额度。
+浏览器测试默认使用本机 Chrome 路径；Linux/macOS 或其他安装目录请调整 `playwright.config.js` 的 `executablePath`，或安装 Playwright Chromium 并移除该设置。大部分测试使用 mock 后端与 Turnstile；新增原生测试使用只绑定本机的 HTTP/CORS/WebSocket 服务和独立测试 JWT。测试不连接真实 Worker/D1，也不消耗数据库额度。
 
 测试范围及真实后台未完成项见 `VALIDATION.md`。在真实测试 Worker 完成公开/私有 × Turnstile 开/关四种组合验收之前，请勿提交主题商店或宣称已通过真实部署验收。
 
