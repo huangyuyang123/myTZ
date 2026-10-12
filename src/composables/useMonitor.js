@@ -10,12 +10,19 @@ import { requestChallenge } from './challenge.js'
 export const sites = shallowRef([])
 export const pageState = shallowReactive({loading:false, error:'', paused:false, now:Date.now()})
 let bootPromise, active
+let loginRedirected = false
+function redirectToLogin(url) {
+  if (loginRedirected) return
+  loginRedirected = true
+  stopConnections()
+  location.assign(url)
+}
 const normalized = s => ({...s, gpu_info:gpu(s.gpu_info)})
 export function bootstrap() {
   if (!bootPromise) bootPromise = (async () => {
     sites.value = getApiBases().map((base, index) => {
       const site = shallowReactive({base, index, config:null, servers:[], stats:{}, sysConfig:{}, status:'idle', error:'', configPromise:null, listPromise:null, deadline:0, paused:false, details:new Map()})
-      site.http = createHttp(base, {getConfig:()=>site.config, challenge:requestChallenge})
+      site.http = createHttp(base, {getConfig:()=>site.config, challenge:requestChallenge, redirect:redirectToLogin})
       site.api = createApi(site.http)
       site.configPromise = site.api.config().then(config => {
         site.config = config
@@ -115,9 +122,16 @@ function connect(p, site, scope, ids) {
   if (!site.deadline && minutes > 0) site.deadline = Date.now() + minutes * 60000
   const generation = p.generation
   const valid = () => active === p && p.generation === generation && !document.hidden
-  const socket = createSocket({base:site.base, scope, ids, jwt:readJwt(), deadline:site.deadline,
-    onStatus: status => { if (valid()) site.status = status },
-    onUnauthorized: () => { if (valid()) site.http.unauthorized() },
+  const socket = createSocket({base:site.base, scope, ids, jwt:readJwt, requireAuth:site.config.is_public !== true, deadline:site.deadline,
+    onStatus: status => {
+      if (!valid()) return
+      site.status = status
+      const lang = site.config.default_language
+      const zh = (!lang || lang === 'auto' ? navigator.language : lang).startsWith('zh')
+      if (status === 'blocked') site.error = zh ? '浏览器阻止了实时连接，请检查后台 CSP API 域名白名单。' : 'The browser blocked the live connection. Check the backend CSP API allowlist.'
+      if (status === 'exhausted') site.error = zh ? '实时连接重试已停止，请通过管理入口重新登录，或刷新页面重试。' : 'Live connection retries stopped. Sign in through the admin link or refresh to retry.'
+    },
+    onUnauthorized: jwt => { if (valid()) site.http.unauthorized(jwt) },
     onTimeout: () => { if (active === p) { site.paused = true; pageState.paused = true } },
     onBatch: msg => { if (valid()) enqueue(p, site, msg, new Set(ids)) }
   })
