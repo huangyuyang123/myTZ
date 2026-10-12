@@ -14,7 +14,7 @@ let loginRedirected = false
 function redirectToLogin(url) {
   if (loginRedirected) return
   loginRedirected = true
-  stopConnections()
+  leavePage()
   location.assign(url)
 }
 const normalized = s => ({...s, gpu_info:gpu(s.gpu_info)})
