@@ -15,6 +15,9 @@ export function applyAppearance() {
   document.documentElement.dataset.theme = ['light','dark'].includes(c.preferred_theme) ? c.preferred_theme : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   const accent = /^#[0-9a-f]{6}$/i.test(options.value.accent) ? options.value.accent : defaults.accent
   document.documentElement.style.setProperty('--accent', accent)
+  const rgb=accent.slice(1).match(/../g).map(hex=>parseInt(hex,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4)
+  const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]
+  document.documentElement.style.setProperty('--accent-ink',luminance>.179?'#000000':'#ffffff')
   document.documentElement.dataset.density = options.value.density === 'compact' ? 'compact' : 'comfortable'
   const background = c.background_image || c.site_background || initialBackground
   if (background) {
