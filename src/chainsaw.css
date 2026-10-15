@@ -27,15 +27,14 @@ b,strong{font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 .app-shell{max-width:1440px;padding:0 40px;margin:auto}
 .topbar{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:750;min-width:0}
-.brand>span:last-child{overflow-wrap:anywhere}
+.brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:750;min-width:0;flex:1}
+.brand>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brand-symbol{width:34px;height:34px;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);border:1px solid #211b17;transform:rotate(-5deg)}
 .brand-symbol svg{width:25px;height:25px}
-.topbar nav{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;flex:none}
-.nav-link,.admin-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 12px}
-.nav-link{position:relative}
-.nav-link.router-link-exact-active::after{content:'';position:absolute;bottom:2px;height:3px;left:12px;right:12px;background:var(--accent)}
-.admin-link{gap:10px;border:1px solid var(--line);border-radius:4px}
+.topbar nav{display:flex;align-items:center;flex:none;margin-left:auto}
+.topbar .admin-link{display:grid;place-items:center;width:44px;height:44px;border:1px solid transparent;border-radius:4px;color:var(--muted)}
+.topbar .admin-link:hover{color:var(--text);background:var(--soft);border-color:var(--line)}
+.topbar .admin-link svg{width:20px;height:20px}
 main{min-height:70vh}
 .hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:28px 0}
 .overview-hero{position:relative;isolation:isolate;display:grid;grid-template-columns:44% minmax(0,1fr);height:300px;margin:24px 0;padding:28px 36px;overflow:hidden;background:#161310}
@@ -162,11 +161,8 @@ footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap
 }
 @media(max-width:700px){
 .app-shell{padding:0 18px}
-.topbar{flex-wrap:wrap;gap:8px;padding:16px 0 10px}
+.topbar{gap:12px;min-height:64px;padding:10px 0}
 .brand{font-size:16px}
-.topbar nav{width:100%;gap:8px;font-size:13px}
-.topbar nav .admin-link{margin-left:auto}
-.topbar nav button,.nav-link,.admin-link{padding:10px}
 .overview-hero{grid-template-columns:1fr;height:auto;gap:0;padding:0;margin:20px 0}
 .makima-art{position:relative;z-index:0;width:100%;height:220px;object-position:left top}
 .overview-hero::after{display:none}
@@ -258,6 +254,17 @@ footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap
 .server-detail .detail-chart .chart-legend i{width:7px;height:7px;border-radius:50%}
 .server-detail .detail-chart .chart-legend b{margin-left:4px}
 .server-detail .detail-chart-empty{height:160px;display:grid;place-items:center;font-size:13px}
+.server-detail .detail-plot-stage{position:relative;min-width:0;touch-action:pan-y}
+.server-detail .detail-plot-stage svg{cursor:crosshair;outline-offset:2px}
+.server-detail .chart-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.8}
+.server-detail .chart-selected-point{stroke:var(--panel);stroke-width:1.5}
+.server-detail .chart-tooltip{position:absolute;top:8px;z-index:5;width:min(224px,100%);padding:12px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--text);box-shadow:0 4px 16px #0002;pointer-events:none;font-size:12px;overflow-wrap:anywhere}
+.server-detail .chart-tooltip time{display:block;padding-bottom:8px;border-bottom:1px solid var(--soft);font-variant-numeric:tabular-nums;font-size:11px;color:var(--muted)}
+.server-detail .chart-tooltip dl{margin:8px 0 0;display:grid;gap:8px}
+.server-detail .chart-tooltip dl>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:6px 12px}
+.server-detail .chart-tooltip dt{display:flex;gap:6px;align-items:baseline;min-width:0}
+.server-detail .chart-tooltip i{display:inline-block;flex:none;width:6px;height:6px;border-radius:50%}
+.server-detail .chart-tooltip dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:1000px){
 .server-detail .detail-network-grid{grid-template-columns:minmax(0,1fr)}
 .server-detail .detail-stats .metric{padding:0 20px}

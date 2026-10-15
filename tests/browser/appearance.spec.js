@@ -78,30 +78,24 @@ test('refined appearance: themes, details, mobile, sparse data and text contrast
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
  expect(errors).toEqual([])
 })
-test('appearance dialog contains keyboard focus, restores trigger and saves existing options',async({page})=>{
- const state=await backend(page,{jwt:true})
- await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(6)
- const trigger=page.getByRole('button',{name:'主题选项',exact:true}),dialog=page.getByRole('dialog',{name:'主题选项'})
- await trigger.click();await expect(dialog).toBeVisible()
- const close=dialog.getByRole('button',{name:'关闭'}),save=dialog.getByRole('button',{name:'保存到服务端'})
- await expect(close).toBeFocused()
- await page.keyboard.press('Shift+Tab');await expect(save).toBeFocused()
- await page.keyboard.press('Tab');await expect(close).toBeFocused()
- await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(trigger).toBeFocused()
- await trigger.click()
- await page.getByLabel('卡片密度').selectOption('compact');await page.getByLabel('显示卡片小图').uncheck()
- await save.click();await expect(page.getByRole('status')).toContainText('已保存到服务端')
- await expect(page.locator('html')).toHaveAttribute('data-density','compact')
- await page.setViewportSize({width:390,height:844})
- await page.screenshot({path:shot('settings'),fullPage:false})
- for(const accent of ['#111111','#ffffff']){
-  await page.getByLabel('强调色').fill(accent);await save.click()
-  await expect(page.locator('html')).toHaveCSS('--accent',accent)
-  const colors=await save.evaluate(el=>({fg:getComputedStyle(el).color,bg:getComputedStyle(el).backgroundColor}))
-  expect(colors.fg).toBe(accent==='#111111'?'rgb(255, 255, 255)':'rgb(0, 0, 0)')
+test('navigation is a single accessible gear and keeps long titles on one row',async({page})=>{
+ const state=await backend(page)
+ state.cfg.site_title='超长站点名称-ABCDEFGHIJKLMNOPQRSTUVWXYZ-ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+ for(const width of [1440,390,320]){
+  await page.setViewportSize({width,height:844});await page.goto('/#/');await page.reload()
+  const header=page.locator('.topbar'),gear=header.getByRole('link',{name:'管理',exact:true})
+  await expect(gear).toBeVisible();await expect(gear).toHaveAttribute('href',base+'/admin#/admin')
+  await expect(header.getByRole('link',{name:'概览',exact:true})).toHaveCount(0)
+  await expect(header.getByRole('button',{name:'主题选项'})).toHaveCount(0)
+  await expect(gear).toHaveText('');await expect(gear.locator('svg')).toBeVisible()
+  const brandBox=await header.locator('.brand').boundingBox(),gearBox=await gear.boundingBox()
+  expect(gearBox.width).toBeGreaterThanOrEqual(44);expect(gearBox.height).toBeGreaterThanOrEqual(44)
+  expect(Math.abs(brandBox.y+brandBox.height/2-gearBox.y-gearBox.height/2)).toBeLessThan(2)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
  }
- await close.click();await expect(trigger).toBeFocused();await expect(page.locator('.card-charts')).toHaveCount(0)
- const writes=state.requests.filter(r=>r.method==='POST');expect(writes).toHaveLength(3);expect(writes[0].path).toBe('/api/theme_options');expect(writes[0].body.theme_options.vendor_key).toBe('retain')
+ await page.locator('.brand').focus();await page.keyboard.press('Tab')
+ await expect(page.getByRole('link',{name:'管理',exact:true})).toBeFocused()
+ expect(state.requests.filter(r=>r.method==='POST')).toHaveLength(0)
 })
 
 test('detail redesign: responsive themes, sparse metrics and readable chart units',async({page})=>{

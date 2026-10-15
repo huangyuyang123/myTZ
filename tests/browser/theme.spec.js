@@ -124,12 +124,18 @@ test('multi-site WS subscribe payloads contain only that backend IDs, detail use
  const sub=subscriptions.at(-1);expect(new URL(sub.url).searchParams.get('subscribe')).toBe('two-id');expect(new URL(sub.url).host).toBe('two.example')
  expect(requests.filter(u=>new URL(u).pathname==='/api/server').every(u=>new URL(u).host==='two.example')).toBe(true)
 })
-test('server options save only the theme_options endpoint and preserve unknown keys',async({page})=>{
+test('backend theme options still apply without a frontend settings dialog',async({page})=>{
  const state=await backend(page,{jwt:true})
+ state.cfg.theme_options={accent:'#3366aa',density:'compact',showCharts:false,vendor_key:'retain'}
  await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(6)
- await page.getByRole('button',{name:'主题选项'}).click();await page.getByRole('button',{name:'保存到服务端'}).click();await expect(page.getByRole('status')).toContainText('已保存到服务端')
- const writes=state.requests.filter(r=>r.method==='POST');expect(writes).toHaveLength(1);expect(writes[0].path).toBe('/api/theme_options');expect(writes[0].headers.authorization).toBe('Bearer test-jwt');expect(writes[0].body.theme_options.vendor_key).toBe('retain')
+ await expect(page.locator('html')).toHaveCSS('--accent','#3366aa')
+ await expect(page.locator('html')).toHaveAttribute('data-density','compact')
+ await expect(page.locator('.card-charts')).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'主题选项'})).toHaveCount(0)
+ await expect(page.getByRole('dialog')).toHaveCount(0)
+ expect(state.requests.filter(r=>r.method==='POST')).toHaveLength(0)
 })
+
 test('online card expires after five minutes without REST; backend totals retain snapshot',async({page})=>{
  await page.clock.install()
  const state=await backend(page);await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(6)

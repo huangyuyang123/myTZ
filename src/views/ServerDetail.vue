@@ -89,7 +89,7 @@ onMounted(()=>enterDetail(siteIndex,route.params.id,detail).catch(e=>pageState.e
         <div class="chart-grid" :aria-busy="detail.historyLoading">
           <article v-for="chart in charts" :key="chart.gpuId ?? chart.title" class="panel history-card">
             <div class="section-heading"><h3>{{chart.title}}</h3><span v-if="chart.gpuId!==undefined" class="muted">{{t('当前','Current')}} {{gpuValue(currentGpu(chart.gpuId))}}</span></div>
-            <SparkChart detailed :rows="rowsFor(chart)" :series="chart.series" :unit="chart.unit"/>
+            <SparkChart detailed :rows="rowsFor(chart)" :series="chart.series" :unit="chart.unit" :reset-key="`${detail.hours}:${detail.historyLoading}`"/>
           </article>
         </div>
       </section>

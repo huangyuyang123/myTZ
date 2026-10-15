@@ -50,21 +50,18 @@ async function fixture(page,{multi=false,clocked=false}={}) {
   return {start,writes,requests,server}
 }
 
-test('multi-site options do not copy another site keys or reset its selected accent on reopening',async({page})=>{
-  const state=await fixture(page,{multi:true})
-  await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(2)
-  await page.getByRole('button',{name:'主题选项',exact:true}).click()
-  await page.getByLabel('保存到站点').selectOption('1')
-  await expect(page.getByLabel('强调色')).toHaveValue('#3366aa')
-  await page.getByRole('button',{name:'保存到服务端',exact:true}).click()
-  await expect(page.getByRole('status')).toContainText('已保存到服务端')
-  console.log('MULTI_SITE_WRITE',JSON.stringify(state.writes[0]))
-  expect.soft(state.writes[0].body.theme_options.alpha_only,'Site A private option should not be copied into Site B').toBeUndefined()
-  await page.getByRole('button',{name:'关闭',exact:true}).click()
-  await page.getByRole('button',{name:'主题选项',exact:true}).click()
-  const reopened={site:await page.getByLabel('保存到站点').inputValue(),accent:await page.getByLabel('强调色').inputValue()}
-  console.log('MULTI_SITE_REOPEN',JSON.stringify(reopened))
-  expect(reopened.accent,'Reopening Site B should retain Site B accent').toBe('#3366aa')
+test('multi-site backend appearance stays isolated with no frontend settings entry',async({page})=>{
+ const state=await fixture(page,{multi:true})
+ await page.goto('/#/');await expect(page.locator('.server-card')).toHaveCount(2)
+ await expect(page.getByRole('button',{name:'主题选项'})).toHaveCount(0)
+ const options=await page.evaluate(async()=>{
+  const {sites}=await import('/src/composables/useMonitor.js')
+  return sites.value.map(site=>site.config.theme_options)
+ })
+ expect(options[0]).toEqual({accent:'#f26b38',alpha_only:'A'})
+ expect(options[1]).toEqual({accent:'#3366aa',beta_only:'B'})
+ await expect(page.getByRole('link',{name:'管理',exact:true})).toHaveAttribute('href','https://one.example/admin#/admin')
+ expect(state.writes).toEqual([])
 })
 
 test('24 hour history retains its selected time range after 21 minutes of live updates',async({page})=>{
