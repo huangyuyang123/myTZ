@@ -59,7 +59,7 @@ test('403 invalidates cached credential, re-verifies once, no infinite retry',as
  let challenges=0,dataCalls=0,configCalls=0
  const http=createHttp(base,{getConfig:()=>({is_public:true,turnstile_enabled:true,turnstile_site_key:'k'}),storage:store,challenge:async()=>{challenges++;return 't'},fetcher:async(url)=>{
   if(url.endsWith('/api/config')){configCalls++;return new Response('{"turnstile_verified":"fresh"}')}
-  dataCalls++;return new Response('{"error":"Forbidden"}',{status:403})
+  dataCalls++;return new Response('{"error":"Turnstile verification failed"}',{status:403})
  }})
  await assert.rejects(http.request('/api/servers'));assert.equal(dataCalls,2);assert.equal(configCalls,1);assert.equal(challenges,1);assert.equal(store.getItem(`cfsm:turnstile_verified:${base}`),null)
 })

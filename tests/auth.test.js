@@ -34,7 +34,7 @@ test('Delayed old 403 cannot remove a fresh credential or start a second challen
     if(url.endsWith('/api/config')){exchanges++;return new Response('{"turnstile_verified":"fresh"}')}
     if(opts.headers['X-Turnstile-Verified']==='old'){
       if(++oldCalls===2) await late.promise
-      return new Response('{"error":"Forbidden"}',{status:403})
+      return new Response('{"error":"Turnstile verification failed"}',{status:403})
     }
     success++;firstRetried.resolve();return new Response('{}')
   }})

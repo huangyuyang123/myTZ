@@ -1,6 +1,6 @@
 import { adminUrl } from './config.js'
 import { jwtExpired } from './auth.js'
-export class HttpError extends Error { constructor(status, message) { super(message); this.status = status } }
+export class HttpError extends Error { constructor(status, message, kind = 'http') { super(message); this.status = status; this.kind = kind } }
 export const readJwt = () => localStorage.getItem('jwt_token') || ''
 export function createHttp(base, {getConfig, challenge, redirect = url => location.assign(url), fetcher = fetch, storage = localStorage}) {
   const cacheKey = `cfsm:turnstile_verified:${base}`
@@ -20,19 +20,32 @@ export function createHttp(base, {getConfig, challenge, redirect = url => locati
       else if (token) headers['X-Turnstile-Token'] = token
     }
     if (body) headers['Content-Type'] = 'application/json'
-    const res = await fetcher(`${base}${path}`, {method, headers, body: body ? JSON.stringify(body) : undefined, credentials:'include', signal})
+    let res
+    try { res = await fetcher(`${base}${path}`, {method, headers, body: body ? JSON.stringify(body) : undefined, credentials:'include', signal}) }
+    catch (error) {
+      if (error?.name === 'AbortError') throw error
+      // Browsers deliberately hide whether fetch failed due to CORS, CSP or networking.
+      throw new HttpError(0, 'Network request failed. Check the connection, CORS and CSP settings.', 'network')
+    }
     // Local validation records presence only; never log JWT or challenge credentials.
     if (import.meta.env?.DEV) console.debug('[CFSM validation]', JSON.stringify({event:'http', method, path, status:res.status, jwt:!!jwt, token:!!headers['X-Turnstile-Token'], verified:!!headers['X-Turnstile-Verified']}))
     if (res.status === 401) {
       const replacement = storage.getItem('jwt_token') || ''
-      const error = new HttpError(401, 'Authentication required')
+      const error = new HttpError(401, 'Authentication required', 'authentication')
       error.retryAuth = !!replacement && replacement !== (jwt || '')
       if (!error.retryAuth) unauthorized(jwt || '')
       throw error
     }
-    if (res.status === 403 && verified && storage.getItem(cacheKey) === verified) storage.removeItem(cacheKey)
-    const data = await res.json().catch(() => { throw new Error(`Invalid JSON response: ${path}`) })
-    if (!res.ok) throw new HttpError(res.status, data.error || data.message || `HTTP ${res.status}`)
+    let data
+    try { data = await res.json() }
+    catch { throw new HttpError(res.status, res.ok ? `Invalid JSON response: ${path}` : `HTTP ${res.status}`, res.ok ? 'invalid-response' : 'http') }
+    if (!res.ok) {
+      const message = typeof data?.error === 'string' ? data.error : typeof data?.message === 'string' ? data.message : `HTTP ${res.status}`
+      // Only the Worker's explicit verification rejection invalidates this credential.
+      const verificationFailed = res.status === 403 && getConfig()?.turnstile_enabled === true && message.trim().toLowerCase() === 'turnstile verification failed'
+      if (verificationFailed && verified && storage.getItem(cacheKey) === verified) storage.removeItem(cacheKey)
+      throw new HttpError(res.status, message, verificationFailed ? 'turnstile' : 'http')
+    }
     if (getConfig()?.turnstile_enabled === true && typeof data?.turnstile_verified === 'string' && data.turnstile_verified) storage.setItem(cacheKey, data.turnstile_verified)
     return data
   }
@@ -52,15 +65,15 @@ export function createHttp(base, {getConfig, challenge, redirect = url => locati
     if (options.bootstrap) return raw(path, options)
     if (options.requireJwt || getConfig()?.is_public !== true) {
       const jwt = storage.getItem('jwt_token') || ''
-      if (jwt && jwtExpired(jwt)) { unauthorized(jwt); throw new HttpError(401, 'Authentication expired') }
-      if (!storage.getItem('jwt_token') && getConfig()?.authorization !== true) { unauthorized(); throw new HttpError(401, 'Authentication required') }
-      if (options.requireJwt && !storage.getItem('jwt_token')) { unauthorized(); throw new HttpError(401, 'JWT required') }
+      if (jwt && jwtExpired(jwt)) { unauthorized(jwt); throw new HttpError(401, 'Authentication expired', 'authentication') }
+      if (!storage.getItem('jwt_token') && getConfig()?.authorization !== true) { unauthorized(); throw new HttpError(401, 'Authentication required', 'authentication') }
+      if (options.requireJwt && !storage.getItem('jwt_token')) { unauthorized(); throw new HttpError(401, 'JWT required', 'authentication') }
     }
     for (let attempt = 0; attempt < 2; attempt++) {
       const verified = await verify()
       try { return await raw(path, {...options, verified}) }
       catch (e) {
-        if (attempt || !(e.status === 403 && getConfig()?.turnstile_enabled === true || e.status === 401 && e.retryAuth)) throw e
+        if (attempt || !(e.kind === 'turnstile' || e.status === 401 && e.retryAuth)) throw e
       }
     }
   }

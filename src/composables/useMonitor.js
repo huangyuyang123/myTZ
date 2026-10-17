@@ -40,11 +40,15 @@ export function bootstrap() {
   return bootPromise
 }
 async function list(site, restore = false) {
-  if (!site.listPromise || restore) site.listPromise = site.api.servers().then(data => {
-    if (!Array.isArray(data.servers)) throw Error('Invalid server list')
-    site.servers = data.servers.map(normalized); site.stats = data.stats || {}; site.sysConfig = data.sysConfig || {}
-    return data
-  })
+  if (!site.listPromise || restore) {
+    const pending = site.api.servers().then(data => {
+      if (!Array.isArray(data.servers)) throw Error('Invalid server list')
+      site.servers = data.servers.map(normalized); site.stats = data.stats || {}; site.sysConfig = data.sysConfig || {}
+      return data
+    })
+    site.listPromise = pending
+    pending.catch(() => { if (site.listPromise === pending) site.listPromise = null })
+  }
   return site.listPromise
 }
 function stopConnections() {
@@ -99,6 +103,9 @@ async function load(p, restore) {
         cached = {hours:0.167, promise: Promise.all([site.api.server(key), site.api.history(key, 0.167)]).then(([server,history]) => {
           if (!Array.isArray(history)) throw Error('Invalid history response')
           return {server:normalized(server), history:compactHistory(history.map(normalized), 0.167), hours:0.167}
+        }).catch(error => {
+          if (site.details.get(key) === cached) site.details.delete(key)
+          throw error
         })}
         site.details.set(key, cached)
       }

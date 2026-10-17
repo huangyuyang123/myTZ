@@ -10,7 +10,7 @@ async function backend(page,{isPublic=true,turnstile=false,jwt=false,multi=false
   const url=new URL(route.request().url()),headers=route.request().headers();requests.push({path:url.pathname,query:url.search,headers,method:route.request().method(),body:route.request().method()==='POST'?route.request().postDataJSON():null})
   if(url.pathname==='/api/config')return route.fulfill({json:{...cfg,...(headers['x-turnstile-token']?{turnstile_verified:'reusable-credential'}:{})}})
   if(!isPublic&&!headers.authorization)return route.fulfill({status:401,json:{error:'Unauthorized'}})
-  if(turnstile&&headers['x-turnstile-verified']!=='reusable-credential')return route.fulfill({status:403,json:{error:'Forbidden'}})
+  if(turnstile&&headers['x-turnstile-verified']!=='reusable-credential')return route.fulfill({status:403,json:{error:'Turnstile verification failed'}})
   if(url.pathname==='/api/servers')return route.fulfill({json:{servers,stats:{total:6,online:5,offline:1,globalSpeedIn:6291456,globalSpeedOut:3145728},sysConfig:{show_price:true,show_expire:true,show_tf:true,show_three_net_details:true}}})
   if(url.pathname==='/api/server')return route.fulfill({json:servers.find(s=>s.id===url.searchParams.get('id'))})
   if(url.pathname==='/api/history/all')return route.fulfill({json:Array.from({length:16},(_,j)=>({...metrics,timestamp:Date.now()-(16-j)*30000,cpu:20+Math.sin(j)*12,ping_ct:j===5?null:j,loss_ct:0}))})
