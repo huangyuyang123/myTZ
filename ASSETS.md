@@ -1,13 +1,19 @@
 # 视觉素材说明
 
-`assets/chainsaw-hero.png` 是为本主题生成的《电锯人》电次角色原创同人插画，不是从动漫官网或其他站点下载的剧照。使用内置 image_gen 工具，未使用 CLI/API 密钥流程。
+2026-10-25 参考用户提供的页面图调整布局、暖色柔光和仪表样式；参考文件仅保存在项目 work/design-reference.jfif，没有把页面截图当作运行界面。新增服务器插画、比例环、资源弧线及网速方向图形由 SummaryArt.vue、MetricBar.vue 和 CSS/SVG 绘制，不依赖图片服务或新增接口。
 
-生成日期：2026-10-11。原始 PNG 为 1146 × 1373，包含真实 alpha 透明通道，保留在源码中。2026-10-12 用 Pillow 将同一插画等比例缩小至 720 × 863，并无损编码为 `assets/chainsaw-hero.webp`；缩放后像素与解码后的 WebP 完全一致，透明通道保留，没有重新生成或修改角色内容。
+当前主题使用 assets/makima-background.png，由 src/views/Dashboard.vue 引用，构建时输出为 dist/assets/makima-background-CAI0-wAu.png。它是使用内置 image_gen 生成并调整构图的《电锯人》玛琪玛原创同人插画，未从动漫官网或其他站点下载，也未使用 CLI/API 密钥流程。
 
-页面实际使用 WebP：515,820 字节，原始 PNG 为 1,989,630 字节，资源体积减少 74.1%。Vite 只将被引用的 WebP 输出至 dist/assets，以带哈希的相对地址引用。插画只属于静态页面资源，不产生监控 API 或 D1 查询。
+最终构图中人物位于左侧：铜红色头发与辫子、圈纹金色眼睛、白衬衫和黑色领带；右侧保留较安静的日落城市背景，供页面中的 CHAINSAW MAN 标题使用。文字、标志、锯齿边框和卡片装饰由 HTML/SVG/CSS 绘制。
 
-站点标题继续读取后台 site_title。首页中的 CHAINSAW MAN、DEVIL HUNTER 和漫画海报文字仅作主题装饰，不代表官方授权或平台来源。Logo 的锯齿图形、圆环、半色调背景和卡片边框由本地 SVG/CSS 绘制，不依赖远程字体或图片服务。
+原始图片为 1,969,975 字节。主题使用本地文件，不依赖外链图床；后台自定义背景仍可覆盖默认背景。图片只属于静态页面资源，不增加监控 API 请求或轮询。站点名称继续读取后台配置，动漫标题属于主题装饰，不代表官方授权。
 
-## 最终生成提示词
+旧版电次的 chainsaw-hero.png / chainsaw-hero.webp 于本次清理移除，当前源码、样式与测试不再引用它们。原先单独的玛琪玛预览制作说明合并到本文件，以下保留原始生成和最终调整提示词。
 
-Use case: illustration-story. Asset type: a transparent character illustration for the right-hand side of a Chainsaw Man-inspired server monitoring dashboard hero, intended for a warm off-white, charcoal and vivid safety-orange manga poster layout. Create an original fan-art illustration of Denji in Chainsaw Man form: recognizable orange chainsaw engine head with a long toothed metal blade projecting toward the upper left, white shirt with rolled sleeves, loose black necktie, black trousers, one chainsaw forearm angled down. Three-quarter waist-up composition, energetic but calm watchful stance, sharp ink contours, graphic cel shading, limited palette of burnt orange, warm ivory, charcoal, muted steel gray; light manga halftone texture within the illustration. Clean, carefully drawn mechanical details, strong silhouette, premium editorial anime artwork. Character centered with generous transparent margins; all major parts including head blade within canvas. Genuine transparent background. No background scene, no rectangular color field, no text, no logo, no watermark, no border. No blood, wounds, gore or other characters. This is only the illustration asset, not a website screenshot.
+## 初次生成提示词
+
+Use case: illustration-story. Asset type: wide website background and hero banner, landscape 1536x1024. Primary request: an anime illustration of Makima from Chainsaw Man, unmistakable red/copper hair with straight bangs and a long braid, golden amber eyes with concentric red rings, pale skin, calm subtle smile, white collared button shirt and black necktie. Single adult woman, waist-up portrait on the RIGHT third of the canvas, head fully visible with ample margin above, looking at viewer. Left 55 percent is subdued empty atmospheric background for HTML title overlay. Muted graphite urban silhouettes, desaturated burgundy and warm ivory light, fine manga ink texture, detailed clean cel shading, dramatic restrained cinematic composition. Character is the only focal subject. No text, no lettering, no logos, no watermark, no additional people, no weapons, no gore. Artwork should function as a legible web dashboard background with clear face on the right.
+
+## 最终构图调整提示词
+
+Edit this generated Makima illustration for a website hero background. Move Makima to the LEFT third of the canvas, with her head fully inside the image and a little breathing room above it. Keep the same character identity, copper red hair and braid, ringed amber eyes, white shirt and black tie, calm expression, clean anime rendering, muted cinematic sunset city palette. The RIGHT 55 percent must be quieter city/sky negative space for a large HTML title. Preserve landscape aspect ratio. No text, no lettering, no logos, no additional people. This replaces the previous right-side composition.

@@ -33,9 +33,12 @@ test('refined appearance: themes, details, mobile, sparse data and text contrast
   state.cfg.preferred_theme=theme
   await page.goto('/#/');await page.reload()
   await expect(page.locator('.server-card')).toHaveCount(6)
+  await page.mouse.move(0,0)
   await expect(page.locator('.overview-hero h1')).toHaveText('CHAINSAW MAN')
   await expect(page.locator('.live-indicator')).toHaveCount(0)
   await expect(page.locator('.server-card .status-chip').last()).toHaveText('离线')
+  await expect(page.locator('.summary-online .ring-text')).toHaveText('83%')
+  await expect(page.locator('.server-card').first().locator('.gauge-value').first()).toHaveAttribute('stroke-dasharray','71 100')
   await page.locator('.makima-art').evaluate(img=>img.decode())
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
   const contrast=await page.evaluate(()=>{
@@ -52,26 +55,46 @@ test('refined appearance: themes, details, mobile, sparse data and text contrast
   })
   console.log('CONTRAST',theme,JSON.stringify(contrast));for(const c of contrast)expect(c.ratio,c.selector).toBeGreaterThanOrEqual(4.5)
   await page.screenshot({path:shot(theme),fullPage:true})
-  if(theme==='light')await page.screenshot({path:shot('cover'),fullPage:false})
+  if(theme==='light'){
+   const first=await page.locator('.server-card').first().boundingBox()
+   await page.setViewportSize({width:1440,height:Math.ceil(first.y+first.height+24)})
+   await page.screenshot({path:shot('overview'),fullPage:false})
+   await page.setViewportSize({width:1440,height:1000})
+  }
  }
+ const requestsBeforeFilter=state.requests.length
+ await page.getByRole('button',{name:'离线',exact:true}).click()
+ await expect(page.locator('.server-card')).toHaveCount(1)
+ await expect(page.locator('.server-name')).toContainText('London')
+ await page.getByRole('button',{name:'全部',exact:true}).click()
+ const search=page.getByRole('searchbox',{name:'搜索服务器'})
+ await search.fill('Tokyo');await expect(page.locator('.server-card')).toHaveCount(1)
+ await search.fill('no-such-node');await expect(page.getByText('没有匹配的服务器',{exact:true})).toBeVisible()
+ await search.fill('');await expect(page.locator('.server-card')).toHaveCount(6)
+ expect(state.requests.length).toBe(requestsBeforeFilter)
  await page.locator('.server-name').first().click();await expect(page.locator('.detail-stats')).toBeVisible()
- await page.screenshot({path:shot('detail'),fullPage:true})
- for(const width of [320,390]){
+ for(const width of [320,390,768]){
   await page.setViewportSize({width,height:844});await page.goto('/#/')
   await expect(page.locator('.server-card')).toHaveCount(6)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
   expect(await page.locator('.chart.small svg').first().evaluate(el=>el.getBoundingClientRect().height)).toBe(48)
-  await page.screenshot({path:shot('mobile-'+width),fullPage:true})
+  await page.mouse.move(0,0)
+  await page.screenshot({path:shot(width===768?'tablet-768':'mobile-'+width),fullPage:true})
  }
  state.servers[0].ping=[{ts:Date.now(),ct:false,cu:false,cm:false,bd:false}]
  state.servers[0].loss=[{ts:Date.now(),ct:false,cu:false,cm:false,bd:false}]
  await page.reload();await expect(page.locator('.server-card').first().locator('.card-charts')).toHaveCount(0)
  state.servers[0].name='阿里云抢占式超长名称节点-ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+ state.servers[0].cpu=0
  state.servers[0].ram_used=undefined;state.servers[0].net_in_speed=undefined
+ await page.routeWebSocket('**/api/ws?*',()=>{})
  state.cfg.default_language='en';state.cfg.theme_options={density:'compact',showCharts:false,accent:'#f26b38'}
  await page.setViewportSize({width:320,height:844});await page.reload()
  await expect(page.locator('html')).toHaveAttribute('data-density','compact')
  await expect(page.locator('.card-charts')).toHaveCount(0)
+ await expect(page.locator('.server-card').first().locator('.metric-line b').first()).toHaveText('0.0%')
+ await expect(page.locator('.server-card').first().locator('.metric-line b').nth(1)).toHaveText('—')
+ await expect(page.locator('.server-card').first().locator('.gauge-value')).toHaveCount(0)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
  await page.screenshot({path:shot('compact-en'),fullPage:false})
  await page.locator('.server-name').first().click();await expect(page.locator('.detail-stats')).toBeVisible()

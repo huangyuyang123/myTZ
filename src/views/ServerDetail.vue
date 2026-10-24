@@ -35,7 +35,7 @@ const detailColors=computed(()=>{
   }
   return `rgb(${color.join(',')})`
  }
- return {'--detail-accent-light':adjusted([255,254,249],[38,36,32]),'--detail-accent-dark':adjusted([36,38,34],[241,240,233])}
+ return {'--detail-accent-light':adjusted([255,252,246],[42,33,28]),'--detail-accent-dark':adjusted([44,36,33],[255,244,232])}
 })
 const visibleProbes=computed(()=>probes.value.filter(p=>probe(s.value['ping_'+p.key])!==null || probe(s.value['loss_'+p.key])!==null))
 const capacity=(used,total)=>`${bytes(used==null?undefined:used*1048576)} / ${bytes(total==null?undefined:total*1048576)}`

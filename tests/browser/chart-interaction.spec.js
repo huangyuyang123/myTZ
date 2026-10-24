@@ -96,8 +96,8 @@ test('single sample and empty history do not invent data',async({page})=>{
  await expect(page.getByRole('tooltip')).toHaveCount(0)
 })
 
-test('touch selection fits narrow screens, closes outside, and lets vertical gestures scroll',async({browser})=>{
- const context=await browser.newContext({baseURL:'http://127.0.0.1:5173',viewport:{width:320,height:844},hasTouch:true,isMobile:true})
+test('touch selection fits narrow screens, closes outside, and lets vertical gestures scroll',async({browser,baseURL})=>{
+ const context=await browser.newContext({baseURL,viewport:{width:320,height:844},hasTouch:true,isMobile:true})
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
  try{
   const state=await fixture(page)

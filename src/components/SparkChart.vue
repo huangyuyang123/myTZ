@@ -2,7 +2,7 @@
 import {computed,ref,watch,onMounted,onBeforeUnmount,useId} from 'vue'
 import {probe} from '../utils/metrics.js'
 import {t} from '../composables/useTheme.js'
-const props = defineProps({rows:{type:Array,default:()=>[]},series:{type:Array,default:()=>[]},small:Boolean,detailed:Boolean,unit:{type:String,default:''},resetKey:{type:[String,Number],default:''}})
+const props = defineProps({rows:{type:Array,default:()=>[]},series:{type:Array,default:()=>[]},small:Boolean,area:Boolean,detailed:Boolean,unit:{type:String,default:''},resetKey:{type:[String,Number],default:''}})
 const values = computed(()=>props.rows.flatMap(r=>props.series.map(s=>r[s.key])).filter(v=>typeof v==='number' && Number.isFinite(v)))
 const rawMax=computed(()=>Math.max(1,...values.value))
 const displayScale=computed(()=>{
@@ -41,6 +41,7 @@ function paths(key) {
   if(points.length) segments.push(points.join(' ')); return segments
 }
 function last(key) { for(let i=props.rows.length-1;i>=0;i--) if(props.rows[i][key]!==undefined && props.rows[i][key]!==false) return props.rows[i][key] }
+function areaPoints(points){const samples=points.split(' ');return `${samples[0].split(',')[0]},94 ${points} ${samples.at(-1).split(',')[0]},94`}
 
 const chartRoot=ref(null),plot=ref(null),plotSvg=ref(null),plotWidth=ref(0)
 const selectedTime=ref(null),tooltipId=`chart-sample-${useId()}`
@@ -136,4 +137,18 @@ onBeforeUnmount(()=>{resizeObserver?.disconnect();document.removeEventListener('
   <div v-if="rows.length && hasSamples" class="chart-time muted"><span>{{timeLabel(minTs)}}</span><span>{{timeLabel(maxTs)}}</span></div>
   <div class="chart-legend"><span v-for="s in series.filter(s=>rows.some(r=>r[s.key]!==false && r[s.key]!==undefined))" :key="s.key"><i :style="{background:s.color}"></i>{{s.label}} <b>{{displayValue(last(s.key))}}</b><em v-if="last(s.key)!==null && rows.some(r=>r[s.key]===null)">△ {{t('超时','Timeout')}}</em></span></div>
 </div>
-<div v-else class="chart" :class="{small}"><svg viewBox="0 0 400 104" :preserveAspectRatio="small ? 'none' : 'xMidYMid meet'" role="img" :aria-label="series.map(s=>s.label).join(', ')"><path v-if="!small" class="grid-line" d="M4 12H396M4 53H396M4 94H396"/><g v-for="s in series" :key="s.key"><polyline v-for="(points,i) in paths(s.key)" :key="i" :points="points" fill="none" :stroke="s.color" stroke-width="2" vector-effect="non-scaling-stroke"/><circle v-for="(r,i) in rows.filter(r=>typeof r[s.key]==='number')" :key="`dot${i}`" :cx="x(r,rows.indexOf(r))" :cy="y(r[s.key])" r="1.7" :fill="s.color"/><path v-for="(r,i) in rows.filter(r=>r[s.key]===null)" :key="i" :d="`M${x(r,rows.indexOf(r))-3} 96l3 -6l3 6z`" :fill="s.color"><title>{{s.label}} · {{t('超时','Timeout')}}</title></path></g></svg><div class="chart-legend"><span v-for="s in series.filter(s=>rows.some(r=>r[s.key]!==false && r[s.key]!==undefined))" :key="s.key"><i :style="{background:s.color}"></i>{{s.label}} <b>{{probe(last(s.key),unit,t('超时','Timeout')) ?? '—'}}</b><em v-if="last(s.key)!==null && rows.some(r=>r[s.key]===null)"> △ {{t('超时','Timeout')}}</em></span></div><div v-if="!small && rows.length" class="chart-time muted"><span>{{new Date(minTs).toLocaleTimeString()}}</span><span>{{new Date(maxTs).toLocaleTimeString()}}</span></div><p v-if="!rows.length" class="muted">{{t('暂无历史样本','No history samples')}}</p></div></template>
+<div v-else class="chart" :class="{small}">
+  <svg viewBox="0 0 400 104" :preserveAspectRatio="small ? 'none' : 'xMidYMid meet'" role="img" :aria-label="series.map(s=>s.label).join(', ')">
+    <path v-if="!small" class="grid-line" d="M4 12H396M4 53H396M4 94H396"/>
+    <g v-for="s in series" :key="s.key">
+      <template v-if="small && area"><polygon v-for="(points,i) in paths(s.key)" :key="'area'+i" :points="areaPoints(points)" :fill="s.color" class="chart-area"/></template>
+      <polyline v-for="(points,i) in paths(s.key)" :key="i" :points="points" fill="none" :stroke="s.color" stroke-width="2" vector-effect="non-scaling-stroke"/>
+      <circle v-for="(r,i) in rows.filter(r=>typeof r[s.key]==='number')" :key="`dot${i}`" :cx="x(r,rows.indexOf(r))" :cy="y(r[s.key])" r="1.7" :fill="s.color"/>
+      <path v-for="(r,i) in rows.filter(r=>r[s.key]===null)" :key="i" :d="`M${x(r,rows.indexOf(r))-3} 96l3 -6l3 6z`" :fill="s.color"><title>{{s.label}} · {{t('超时','Timeout')}}</title></path>
+    </g>
+  </svg>
+  <div class="chart-legend"><span v-for="s in series.filter(s=>rows.some(r=>r[s.key]!==false && r[s.key]!==undefined))" :key="s.key"><i :style="{background:s.color}"></i>{{s.label}} <b>{{probe(last(s.key),unit,t('超时','Timeout')) ?? '—'}}</b><em v-if="last(s.key)!==null && rows.some(r=>r[s.key]===null)"> △ {{t('超时','Timeout')}}</em></span></div>
+  <div v-if="!small && rows.length" class="chart-time muted"><span>{{new Date(minTs).toLocaleTimeString()}}</span><span>{{new Date(maxTs).toLocaleTimeString()}}</span></div>
+  <p v-if="!rows.length" class="muted">{{t('暂无历史样本','No history samples')}}</p>
+</div>
+</template>
